@@ -1,0 +1,15 @@
+# Ignorar dependências
+node_modules/
+
+# Ignorar arquivos temporários do Expo
+.expo/
+
+# Ignorar logs
+npm-debug.log
+yarn-error.log
+
+# Ignorar arquivos do sistema
+.DS_Store
+
+README.md
+
