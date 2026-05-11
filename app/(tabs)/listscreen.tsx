@@ -1,20 +1,48 @@
-import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Button, Modal, TextInput, StyleSheet, TouchableOpacity } from 'react-native';
+import * as Location from 'expo-location';
 
 export default function ListScreen() {
   const [items, setItems] = useState([{ id: '1', name: 'Item inicial' }]);
   const [modalVisible, setModalVisible] = useState(false);
   const [newItem, setNewItem] = useState('');
   const [editando, setEditando] = useState<null | string>(null);
+  const [location, setLocation] = useState<Location.LocationObject | null>(null);
+
+
+  useEffect(() => {
+    const carregarDados = async () => {
+      const dadosSalvos = await AsyncStorage.getItem('listas');
+      if (dadosSalvos) setItems(JSON.parse(dadosSalvos));
+    };
+    carregarDados();
+  }, []);
+
+
+  useEffect(() => {
+    AsyncStorage.setItem('listas', JSON.stringify(items));
+  }, [items]);
+
+  
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        console.log('Permissão negada');
+        return;
+      }
+      let loc = await Location.getCurrentPositionAsync({});
+      setLocation(loc);
+    })();
+  }, []);
 
   const salvarItem = () => {
     if (newItem.trim() === '') return;
     if (editando) {
-    
       setItems(items.map(i => i.id === editando ? { ...i, name: newItem } : i));
       setEditando(null);
     } else {
-
       setItems([...items, { id: Date.now().toString(), name: newItem }]);
     }
     setNewItem('');
@@ -33,6 +61,13 @@ export default function ListScreen() {
   return (
     <View style={styles.container}>
       <Text style={styles.title}>Listagem de Objetos</Text>
+
+      {location && (
+        <Text style={styles.item}>
+           Localização atual: {location.coords.latitude}, {location.coords.longitude}
+        </Text>
+      )}
+
       <FlatList
         data={items}
         keyExtractor={item => item.id}
@@ -47,7 +82,7 @@ export default function ListScreen() {
         )}
       />
 
-      <Button title="Adicionar a lista" onPress={() => { setEditando(null); setNewItem(''); setModalVisible(true); }} />
+      <Button title="Adicionar à lista" onPress={() => { setEditando(null); setNewItem(''); setModalVisible(true); }} />
 
       <Modal visible={modalVisible} animationType="slide">
         <View style={styles.modalContainer}>
@@ -68,7 +103,7 @@ export default function ListScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, padding: 20, backgroundColor: '#fffff' },
+  container: { flex: 1, padding: 20, backgroundColor: '#ffffff' },
   title: { fontSize: 20, marginBottom: 10, color: '#000000', fontWeight: 'bold' },
   item: { fontSize: 16, marginVertical: 5, color: '#000000' },
   modalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#ffffff' },
